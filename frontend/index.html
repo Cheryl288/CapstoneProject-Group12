@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capstone Project</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://unpkg.com/vue@3"></script>
+</head>
+
+<body style="background-color: #e6f2ff;">
+
+  <div id="app" class="container">
+    <div class="row p-5 d-flex justify-content-between align-items-center">
+      <div class="col">
+        <h1
+          style="background-image: linear-gradient(#8fc6fd, #8a64eb); font: 4em sans-serif; border-style: none; width: 330px; border-radius: 3px; color: #ffffff;"
+          class="display-4">{{ title }}</h1>
+      </div>
+      <div class="col text-end">
+        <h5 v-if="token">Welcome, {{user.name}}!</h5>
+        <br>
+        <button type="button" class="btn btn-outline-primary me-3" @click="showNewPost = true"
+          v-if="token">&plus;</button>
+        <button class="btn btn-outline-secondary" v-if="token" @click="logout">Logout</button>
+        <div v-else>
+          <button class="btn btn-outline-secondary me-3" @click="showRegister = true">Register</button>
+          <button class="btn btn-outline-primary" @click="showLogin = true">Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display posts if user is logged in-->
+    <div class="row" v-if="token">
+      <div class="col-12 p-3" v-for="post in posts" :key="post.id">
+        <div class="card">
+          <div class="card-header">
+            <h5 style="color: rgb(0, 145, 255);"><img src="image/userface.png" alt="User face"
+                style="width: 25px;height: 25px; "> {{ post.user.name}}</h5>
+            <p style="font-size: 8pt;">{{post.created_at}}</p>
+          </div>
+          <div class="card-body d-flex justify-content-between p-3">
+            <h4 class=""><b>{{ post.title }}</b></h4>
+            <div class="d-flex align-items-center">
+              <button class="btn btn-outline-primary me-3" @click="editPost(post)"
+                v-if="user.name === post.user.name">Edit</button>
+              <button class="btn btn-outline-danger" @click="deletePost(post)"
+                v-if="user.name === post.user.name">Delete</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="card-text">{{ post.content }}</p>
+          </div>
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <button @click="upvotePost(post)" class="btn btn-outline-danger me-3">🡅</button>
+              <!-- <button v-else class="btn btn-danger me-3" disabled>🡅</button> -->
+              <button class="btn btn-outline-secondary" @click="addComment(post)">💬</button>
+            </div>
+          </div>
+          <div class="card-footer">
+            <h5 style="font-family:cursive;"><b>Upvotes: {{ post.upvotes}}</b></h5>
+            <hr>
+            <h5 style="font-family:cursive;"><b>Comments:</b></h5>
+            <ul class="list-unstyled">
+              <li v-for="comment in post.comments" :key="comment.id">
+                <div style="color: rgb(0, 145, 255); font-weight:500;">{{comment.user.name}}:</div>{{ comment.content }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display content if user is not logged in -->
+    <div class="row" v-else>
+      <div class="col-12 p-3" v-for="post in posts" :key="post.id">
+        <div class="card">
+          <div class="card-header">
+            <h5 style="color: rgb(0, 145, 255);"><img src="image/userface.png" alt="User face"
+                style="width: 25px;height: 25px; "> {{ post.user.name}}</h5>
+            <p style="font-size: small;">{{post.created_at}}</p>
+          </div>
+          <div class="card-body d-flex justify-content-between p-3">
+            <h4 class=""><b>{{ post.title }}</b></h4>
+          </div>
+          <div class="card-body">
+            <p class="card-text">{{post.content}}</p>
+          </div>
+          <div class="card-footer">
+            <h5 style="font-family:cursive;"><b>Upvotes: {{ post.upvotes}}</b></h5>
+            <hr>
+            <h5 style="font-family:cursive;"><b>Comments:</b></h5>
+            <ul class="list-unstyled">
+              <li v-for="comment in post.comments" :key="comment.id">
+                <div style="color: rgb(0, 145, 255); font-weight:500;">{{comment.user.name}}:</div>{{ comment.content }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register Modal and Form -->
+    <div class="modal" tabindex="-1" :class="{'d-block pt-5 show bg-dark bg-opacity-75': showRegister}">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Register</h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="showRegister = false"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="register">
+              <div class="form-group mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input id="name" type="text" class="form-control" v-model="registerForm.name">
+                <small class="text-danger" v-if="errors.name">{{ errors.name }}</small>
+              </div>
+              <div class="form-group mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input id="email" class="form-control" v-model="registerForm.email">
+                <small class="text-danger" v-if="errors.email">{{ errors.email }}</small>
+              </div>
+              <div class="form-group mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input id="password" type="password" class="form-control" v-model="registerForm.password">
+                <small class="text-danger" v-if="errors.password">{{ errors.password }}</small>
+              </div>
+              <div class="form-group mb-3">
+                <label for="password_confirmation" class="form-label">Confirm Password</label>
+                <input id="password_confirmation" type="password" class="form-control"
+                  v-model="registerForm.password_confirmation">
+                <small class="text-danger" v-if="errors.password_confirmation">{{ errors.password_confirmation
+                  }}</small>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Modal and Form -->
+    <div class="modal" tabindex="-1" :class="{'d-block pt-5 show bg-dark bg-opacity-75': showLogin}">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Login</h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="showLogin = false"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="login">
+              <div class="form-group mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input id="email" class="form-control" v-model="loginForm.email">
+                <small class="text-danger" v-if="errors.email">{{ errors.email }}</small>
+              </div>
+              <div class="form-group mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input id="password" type="password" class="form-control" v-model="loginForm.password">
+                <small class="text-danger" v-if="errors.password">{{ errors.password }}</small>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Log in</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Post Modal and Form -->
+    <div class="modal" tabindex="-1" :class="{'d-block pt-5 show bg-dark bg-opacity-75': showNewPost}">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">New Post</h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="showNewPost = false"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="addPost">
+              <div class="form-group mb-3">
+                <label class="form-label" for="title">
+                  Title
+                </label>
+                <input type="text" id="title" class="form-control" v-model="postForm.title">
+                <small class="text-danger" v-if="errors.title">{{ errors.title }}</small>
+              </div>
+
+              <div class="form-group mb-3">
+                <label class="form-label" for="content">Content</label>
+                <textarea id="content" class="form-control" v-model="postForm.content"></textarea>
+                <small class="text-danger" v-if="errors.content">{{ errors.content }}</small>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Add Post</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Post Modal and Form -->
+    <div class="modal" tabindex="-1" :class="{'d-block pt-5 show bg-dark bg-opacity-75': showEditPost}">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Edit Post</h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="showEditPost = false"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="updatePost">
+              <div class="form-group mb-3">
+                <label class="form-label" for="title">
+                  Title
+                </label>
+                <input type="text" id="title" class="form-control" v-model="editForm.title">
+                <small class="text-danger" v-if="errors.title">{{ errors.title }}</small>
+              </div>
+
+              <div class="form-group mb-3">
+                <label class="form-label" for="content">Content</label>
+                <textarea id="content" class="form-control" v-model="editForm.content"></textarea>
+                <small class="text-danger" v-if="errors.content">{{ errors.content }}</small>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Update Post</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Comment Modal and Form -->
+    <div class="modal" tabindex="-1" :class="{'d-block pt-5 show bg-dark bg-opacity-75': showAddComment}">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Comment</h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="showAddComment = false"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="createComment">
+              <div class="form-group mb-3">
+                <label class="form-label" for="content">Content</label>
+                <textarea id="content" class="form-control" v-model="addCommentForm.content"></textarea>
+                <small class="text-danger" v-if="errors.content">{{ errors.content }}</small>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Add Comment</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+
+</html>
